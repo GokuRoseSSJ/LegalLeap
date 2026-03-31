@@ -11,7 +11,11 @@ export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
 // Initialize Gemini AI
-export const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+const apiKey = process.env.GEMINI_API_KEY;
+if (!apiKey) {
+  console.warn('GEMINI_API_KEY is missing. AI features will not work.');
+}
+export const ai = new GoogleGenAI({ apiKey: apiKey || 'dummy-key' });
 
 // Error handling for Firestore operations
 export enum OperationType {
