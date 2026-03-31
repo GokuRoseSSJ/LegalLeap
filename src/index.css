@@ -1,0 +1,35 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Outfit", sans-serif;
+  
+  --color-primary: #E23744; /* Zomato Red */
+  --color-primary-dark: #CB202D;
+  --color-secondary: #2D2D2D;
+  --color-accent: #F4F4F4;
+}
+
+@layer base {
+  body {
+    @apply font-sans bg-white text-secondary;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-bold;
+  }
+}
+
+.zomato-card {
+  @apply bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200;
+}
+
+.zomato-button {
+  @apply bg-primary text-white font-semibold py-2 px-4 rounded-lg hover:bg-primary-dark transition-colors duration-200 disabled:opacity-50;
+}
+
+.zomato-input {
+  @apply w-full border border-gray-200 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all;
+}
+

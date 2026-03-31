@@ -1,0 +1,5 @@
+{
+  "name": "LegalLeap",
+  "description": "The Digital Compliance Officer for Indian SMBs. Automate GST filings, manage FSSAI/Trade licenses with AI document extraction, and connect with CA experts in real-time.",
+  "requestFramePermissions": ["camera"]
+}

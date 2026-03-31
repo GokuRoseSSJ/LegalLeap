@@ -1,0 +1,116 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with business details",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "phoneNumber": { "type": "string", "description": "Indian phone number (+91)" },
+        "businessName": { "type": "string" },
+        "gstin": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "admin"] }
+      },
+      "required": ["uid", "email", "phoneNumber"]
+    },
+    "License": {
+      "title": "License",
+      "description": "Compliance license details (GST, FSSAI, etc.)",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Owner UID" },
+        "type": { "type": "string", "enum": ["GST", "FSSAI", "Trade License", "Other"] },
+        "licenseNumber": { "type": "string" },
+        "expiryDate": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["Active", "Expiring", "Expired"] }
+      },
+      "required": ["uid", "type", "licenseNumber", "expiryDate"]
+    },
+    "Document": {
+      "title": "Document",
+      "description": "Compliance document metadata",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Owner UID" },
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "uploadDate": { "type": "string", "format": "date-time" },
+        "url": { "type": "string", "format": "uri" }
+      },
+      "required": ["uid", "name", "type", "uploadDate"]
+    },
+    "GSTFiling": {
+      "title": "GST Filing",
+      "description": "GST monthly filing status",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Owner UID" },
+        "month": { "type": "string" },
+        "year": { "type": "integer" },
+        "gstr1Status": { "type": "string", "enum": ["Pending", "Filed", "Help Requested", "Expert Assigned 👨💼"] },
+        "gstr3bStatus": { "type": "string", "enum": ["Pending", "Filed", "Help Requested", "Expert Assigned 👨💼"] },
+        "gstr1ReceiptUrl": { "type": "string", "format": "uri" },
+        "gstr3bReceiptUrl": { "type": "string", "format": "uri" }
+      },
+      "required": ["uid", "month", "year"]
+    },
+    "Referral": {
+      "title": "Referral",
+      "description": "Lead tracking for CA partners",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "businessName": { "type": "string" },
+        "documentType": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["initiated", "converted", "paid"] },
+        "shortId": { "type": "string" },
+        "relatedDocId": { "type": "string" }
+      },
+      "required": ["userId", "businessName", "documentType", "timestamp", "status", "shortId", "relatedDocId"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "User notifications and alerts",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Owner UID" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "time": { "type": "string", "format": "date-time" },
+        "type": { "type": "string", "enum": ["warning", "danger", "success", "info", "system"] },
+        "read": { "type": "boolean" },
+        "priority": { "type": "string", "enum": ["Normal", "High"] }
+      },
+      "required": ["uid", "title", "message", "time", "type", "read", "priority"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/licenses/{licenseId}": {
+      "schema": "License",
+      "description": "Business licenses"
+    },
+    "/documents/{documentId}": {
+      "schema": "Document",
+      "description": "Compliance documents"
+    },
+    "/gstFilings/{filingId}": {
+      "schema": "GSTFiling",
+      "description": "GST filing records"
+    },
+    "/referrals/{referralId}": {
+      "schema": "Referral",
+      "description": "Lead tracking records"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "User notifications"
+    }
+  }
+}

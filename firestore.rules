@@ -1,0 +1,203 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: userId (UID)
+    // Fields:
+    //   - uid: string (required)
+    //   - email: string (required, email format)
+    //   - displayName: string (optional)
+    //   - phoneNumber: string (required, +91 format)
+    //   - businessName: string (optional)
+    //   - gstin: string (optional)
+    //   - role: string (required, enum: ['user', 'admin'])
+    //
+    // Collection: licenses
+    // Document ID: auto-generated
+    // Fields:
+    //   - uid: string (required, owner UID)
+    //   - type: string (required, enum: ['GST', 'FSSAI', 'Trade License', 'Other'])
+    //   - licenseNumber: string (required)
+    //   - expiryDate: timestamp (required)
+    //   - status: string (required, enum: ['Active', 'Expiring', 'Expired'])
+    //
+    // Collection: documents
+    // Document ID: auto-generated
+    // Fields:
+    //   - uid: string (required, owner UID)
+    //   - name: string (required)
+    //   - type: string (required)
+    //   - uploadDate: timestamp (required)
+    //   - url: string (required, uri format)
+    //
+    // Collection: gstFilings
+    // Document ID: auto-generated
+    // Fields:
+    //   - uid: string (required, owner UID)
+    //   - month: string (required)
+    //   - year: int (required)
+    //   - gstr1Status: string (required, enum: ['Pending', 'Filed', 'Help Requested', 'Expert Assigned 👨💼'])
+    //   - gstr3bStatus: string (required, enum: ['Pending', 'Filed', 'Help Requested', 'Expert Assigned 👨💼'])
+    //
+    // Collection: referrals
+    // Document ID: auto-generated
+    // Fields:
+    //   - userId: string (required)
+    //   - businessName: string (required)
+    //   - documentType: string (required)
+    //   - timestamp: timestamp (required)
+    //   - status: string (required, enum: ['initiated', 'converted', 'paid'])
+    //   - shortId: string (required)
+    //   - relatedDocId: string (required)
+    //
+    // Collection: notifications
+    // Document ID: auto-generated
+    // Fields:
+    //   - uid: string (required, owner UID)
+    //   - title: string (required)
+    //   - message: string (required)
+    //   - time: timestamp (required)
+    //   - type: string (required, enum: ['warning', 'danger', 'success', 'info', 'system'])
+    //   - read: bool (required)
+    //   - priority: string (required, enum: ['Normal', 'High'])
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.uid;
+    }
+    
+    function isRequestOwner() {
+      return isAuthenticated() && request.auth.uid == request.resource.data.uid;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "devparvathareddy@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidPhone(phone) {
+      return phone is string && phone.matches("^\\+91\\d{10}$");
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return data.uid is string && data.uid.size() > 0 &&
+             isValidEmail(data.email) &&
+             isValidPhone(data.phoneNumber) &&
+             data.role in ['user', 'admin'];
+    }
+
+    function isValidLicense(data) {
+      return data.uid is string &&
+             data.type in ['GST', 'FSSAI', 'Trade License', 'Drug License', 'Other'] &&
+             data.licenseNumber is string && data.licenseNumber.size() > 0 &&
+             data.expiryDate is timestamp &&
+             data.status in ['Active', 'Expiring', 'Expired', 'Help Requested', 'Expert Assigned 👨💼', 'Filed/Completed'];
+    }
+
+    function isValidDocument(data) {
+      return data.uid is string &&
+             data.name is string && data.name.size() > 0 &&
+             data.type is string &&
+             data.uploadDate is timestamp &&
+             data.url is string && data.url.size() > 0;
+    }
+
+    function isValidGSTFiling(data) {
+      return data.uid is string &&
+             data.month is string &&
+             data.year is int &&
+             data.gstr1Status in ['Pending', 'Filed', 'Help Requested', 'Expert Assigned 👨💼'] &&
+             data.gstr3bStatus in ['Pending', 'Filed', 'Help Requested', 'Expert Assigned 👨💼'];
+    }
+
+    function isValidReferral(data) {
+      return data.userId is string &&
+             data.businessName is string &&
+             data.documentType is string &&
+             data.timestamp is timestamp &&
+             data.status in ['initiated', 'converted', 'paid'] &&
+             data.shortId is string &&
+             data.relatedDocId is string;
+    }
+
+    function isValidNotification(data) {
+      return data.uid is string &&
+             data.title is string && data.title.size() > 0 &&
+             data.message is string && data.message.size() > 0 &&
+             data.time is timestamp &&
+             data.type in ['warning', 'danger', 'success', 'info', 'system'] &&
+             data.read is bool &&
+             data.priority in ['Normal', 'High'];
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == 'user' || isAdmin());
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == resource.data.role || isAdmin());
+    }
+
+    match /licenses/{licenseId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isRequestOwner() && isValidLicense(request.resource.data);
+      allow update: if isDocOwner() && isRequestOwner() && isValidLicense(request.resource.data);
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /documents/{documentId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isRequestOwner() && isValidDocument(request.resource.data);
+      allow update: if isDocOwner() && isRequestOwner() && isValidDocument(request.resource.data);
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /gstFilings/{filingId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isRequestOwner() && isValidGSTFiling(request.resource.data);
+      allow update: if isDocOwner() && isRequestOwner() && isValidGSTFiling(request.resource.data);
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /referrals/{referralId} {
+      allow read: if isAdmin() || (isAuthenticated() && request.auth.uid == resource.data.userId);
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId && isValidReferral(request.resource.data);
+      allow update: if isAdmin();
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isRequestOwner() && isValidNotification(request.resource.data);
+      allow update: if isDocOwner() && isRequestOwner() && isValidNotification(request.resource.data);
+      allow delete: if isDocOwner() || isAdmin();
+    }
+  }
+}
